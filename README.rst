@@ -39,7 +39,7 @@ tools such as supervisord.
 rainbow-saddle handles all of this for you, and never changes its PID.
 Reloading code becomes as simple as sending a ``SIGHUP`` again::
 
-    $ rainbow-saddle gunicorn_paster development.ini --log-level debug --pid /tmp/mysite.pid
+    $ rainbow-saddle --pid /tmp/mysite.pid gunicorn_paster development.ini --log-level debug 
     $ kill -HUP `cat /tmp/mysite.pid`
 
 All options are passed directly to the gunicorn executable, except for --pid

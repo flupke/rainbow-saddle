@@ -36,7 +36,7 @@ class RainbowSaddle(object):
         fp.close()
         self.pidfile = fp.name
         # Start gunicorn process
-        args = [options.command, '--pid', self.pidfile] + options.args
+        args = options.gunicorn_args + ['--pid', self.pidfile]
         process = subprocess.Popen(args)
         self.arbiter_pid = process.pid
         # Install signal handlers
@@ -110,18 +110,16 @@ def main():
     # Parse command line
     parser = argparse.ArgumentParser(description='Wrap gunicorn to handle '
             'graceful restarts correctly')
-    parser.add_argument('command', help='the gunicorn exe to run (e.g. '
-            'gunicorn, gunicorn_paster, etc...)')
-    parser.add_argument('--pid', '-p', help='a filename to use for the PID '
-            'file')
-    parser.add_argument('args', nargs=argparse.REMAINDER, help='additional '
-            'arguments to pass to gunicorn')
+    parser.add_argument('--pid',  help='a filename to store the '
+            'rainbow-saddle PID')
+    parser.add_argument('gunicorn_args', nargs=argparse.REMAINDER, 
+            help='gunicorn command line')
     options = parser.parse_args()
 
     # Write pid file
     if options.pid is not None:
         with open(options.pid, 'w') as fp:
-            fp.write(os.getpid())
+            fp.write('%s\n' % os.getpid())
         atexit.register(os.unlink, options.pid)
 
     # Run script
