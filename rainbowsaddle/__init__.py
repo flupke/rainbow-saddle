@@ -1,4 +1,7 @@
+from __future__ import print_function
+
 import os
+import sys
 import atexit
 import subprocess
 import signal
@@ -17,7 +20,8 @@ def signal_handler(func):
         try:
             return func(*args, **kwargs)
         except:
-            print 'Uncaught exception in signal handler %s' % func
+            print('Uncaught exception in signal handler %s' % func,
+                    file=sys.stderr)
             traceback.print_exc()
     return wrapper
 
@@ -69,9 +73,9 @@ class RainbowSaddle(object):
         self.stopped = True
 
     def log(self, msg):
-        print '-' * 78
-        print msg
-        print '-' * 78
+        print('-' * 78, file=sys.stderr)
+        print(msg, file=sys.stderr)
+        print('-' * 78, file=sys.stderr)
 
     def wait_pid(self, pid):
         """
