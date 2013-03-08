@@ -63,8 +63,19 @@ class RainbowSaddle(object):
         os.kill(self.arbiter_pid, signal.SIGQUIT)
         self.wait_pid(self.arbiter_pid)
         # Read new arbiter PID
-        with open(self.pidfile) as fp:
-            self.arbiter_pid = int(fp.read())
+        prev_pid = None
+        while True:
+            with open(self.pidfile) as fp:
+                try:
+                    pid = int(fp.read())
+                except ValueError:
+                    pass
+                else:
+                    if prev_pid == pid:
+                        break
+                    prev_pid = pid
+            time.sleep(0.3)
+        self.arbiter_pid = pid
         self.log('New arbiter PID is %s' % self.arbiter_pid)
 
     def stop(self, signum, frame):
