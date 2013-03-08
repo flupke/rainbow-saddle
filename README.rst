@@ -1,23 +1,43 @@
-This file requires editing
-==========================
+Rainbow Saddle
+==============
 
-Note to the author: Please add something informative to this README *before*
-releasing your software, as `a little documentation goes a long way`_.  Both
-README.rst (this file) and NEWS.txt (release notes) will be included in your
-package metadata which gets displayed in the PyPI page for your project.
+rainbow-saddle is a wrapper around `Gunicorn <http://gunicorn.org/>`_ to
+simplify code reloading without dropping requests.
 
-You can take a look at the README.txt of other projects, such as repoze.bfg
-(http://bfg.repoze.org/trac/browser/trunk/README.txt) for some ideas.
+Installation
+------------
 
-.. _`a little documentation goes a long way`: http://www.martinaspeli.net/articles/a-little-documentation-goes-a-long-way
+Install from pypi::
 
-Credits
--------
+    $ sudo pip install rainbow-saddle
 
-- `Distribute`_
-- `Buildout`_
-- `modern-package-template`_
+Or from source::
 
-.. _Buildout: http://www.buildout.org/
-.. _Distribute: http://pypi.python.org/pypi/distribute
-.. _`modern-package-template`: http://pypi.python.org/pypi/modern-package-template
+    $ sudo ./setup.py install
+
+Why?
+----
+
+Sometimes doing a ``kill -HUP <gunicorn PID>`` is not sufficient to reload your
+code. For example it doesn't work well `if you host your code behind a symlink
+<https://github.com/benoitc/gunicorn/issues/394>`_, or if a `.pth in your
+installation is updated to point to a different directory
+<https://github.com/benoitc/gunicorn/issues/402>`_.
+
+The correct way to reload code in such situations is a bit complicated::
+
+    # Reexec a new master with new workers
+    /bin/kill -s USR2 `cat "$PID"`
+    # Graceful stop old workers
+    /bin/kill -s WINCH `cat "$PIDOLD"`
+    # Graceful stop old master 
+    /bin/kill -s QUIT `cat "$PIDOLD"`
+
+It also has the downside of changing the "master" process PID, which confuses
+tools such as supervisord.
+
+rainbow-saddle handles all of this for you, and never changes its PID.
+Reloading code becomes as simple as sending a ``SIGHUP`` again::
+
+    $ rainbow-saddle --pid /tmp/mysite.pid gunicorn_paster development.ini --log-level debug 
+    $ kill -HUP `cat /tmp/mysite.pid`

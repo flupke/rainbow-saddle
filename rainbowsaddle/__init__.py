@@ -1,4 +1,7 @@
+from __future__ import print_function
+
 import os
+import sys
 import atexit
 import subprocess
 import signal
@@ -17,7 +20,8 @@ def signal_handler(func):
         try:
             return func(*args, **kwargs)
         except:
-            print 'Uncaught exception in signal handler %s' % func
+            print('Uncaught exception in signal handler %s' % func,
+                    file=sys.stderr)
             traceback.print_exc()
     return wrapper
 
@@ -26,24 +30,19 @@ class RainbowSaddle(object):
 
     def __init__(self, options):
         self.stopped = False
-        self.pid = os.getpid()
         # Create a temporary file for the gunicorn pid file
         fp = tempfile.NamedTemporaryFile(prefix='rainbow-saddle-gunicorn-',
                 suffix='.pid', delete=False)
         fp.close()
         self.pidfile = fp.name
         # Start gunicorn process
-        args = [options.command, '--pid', self.pidfile] + options.args
+        args = options.gunicorn_args + ['--pid', self.pidfile]
         process = subprocess.Popen(args)
         self.arbiter_pid = process.pid
         # Install signal handlers
         signal.signal(signal.SIGHUP, self.restart_arbiter)
         for signum in (signal.SIGTERM, signal.SIGINT):
             signal.signal(signum, self.stop)
-        signal.signal(signal.SIGCHLD, signal.SIG_DFL)
-
-    def handle_sigchld(self, signum, frame):
-        pass
 
     def run_forever(self):
         while not self.stopped:
@@ -64,8 +63,19 @@ class RainbowSaddle(object):
         os.kill(self.arbiter_pid, signal.SIGQUIT)
         self.wait_pid(self.arbiter_pid)
         # Read new arbiter PID
-        with open(self.pidfile) as fp:
-            self.arbiter_pid = int(fp.read())
+        prev_pid = None
+        while True:
+            with open(self.pidfile) as fp:
+                try:
+                    pid = int(fp.read())
+                except ValueError:
+                    pass
+                else:
+                    if prev_pid == pid:
+                        break
+                    prev_pid = pid
+            time.sleep(0.3)
+        self.arbiter_pid = pid
         self.log('New arbiter PID is %s' % self.arbiter_pid)
 
     def stop(self, signum, frame):
@@ -74,9 +84,9 @@ class RainbowSaddle(object):
         self.stopped = True
 
     def log(self, msg):
-        print '-' * 78
-        print msg
-        print '-' * 78
+        print('-' * 78, file=sys.stderr)
+        print(msg, file=sys.stderr)
+        print('-' * 78, file=sys.stderr)
 
     def wait_pid(self, pid):
         """
@@ -97,20 +107,21 @@ class RainbowSaddle(object):
 
 
 def main():
+    # Parse command line
     parser = argparse.ArgumentParser(description='Wrap gunicorn to handle '
             'graceful restarts correctly')
-    parser.add_argument('command', help='the gunicorn exe to run (e.g. '
-            'gunicorn, gunicorn_paster, etc...)')
-    parser.add_argument('--pid', '-p', help='a filename to use for the PID '
-            'file')
-    parser.add_argument('args', nargs=argparse.REMAINDER, help='additional '
-            'arguments to pass to gunicorn')
+    parser.add_argument('--pid',  help='a filename to store the '
+            'rainbow-saddle PID')
+    parser.add_argument('gunicorn_args', nargs=argparse.REMAINDER, 
+            help='gunicorn command line')
     options = parser.parse_args()
 
     # Write pid file
     if options.pid is not None:
         with open(options.pid, 'w') as fp:
-            fp.write(os.getpid())
+            fp.write('%s\n' % os.getpid())
         atexit.register(os.unlink, options.pid)
+
+    # Run script
     saddle = RainbowSaddle(options)
     saddle.run_forever()
