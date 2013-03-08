@@ -1,8 +1,8 @@
 Rainbow Saddle
 ==============
 
-rainbow-saddle is a wrapper for `Gunicorn <http://gunicorn.org/>`_ to simplify
-code reloading without dropping requests.
+rainbow-saddle is a wrapper around `Gunicorn <http://gunicorn.org/>`_ to
+simplify code reloading without dropping requests.
 
 Installation
 ------------
