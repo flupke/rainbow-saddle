@@ -26,7 +26,6 @@ class RainbowSaddle(object):
 
     def __init__(self, options):
         self.stopped = False
-        self.pid = os.getpid()
         # Create a temporary file for the gunicorn pid file
         fp = tempfile.NamedTemporaryFile(prefix='rainbow-saddle-gunicorn-',
                 suffix='.pid', delete=False)
@@ -40,10 +39,6 @@ class RainbowSaddle(object):
         signal.signal(signal.SIGHUP, self.restart_arbiter)
         for signum in (signal.SIGTERM, signal.SIGINT):
             signal.signal(signum, self.stop)
-        signal.signal(signal.SIGCHLD, signal.SIG_DFL)
-
-    def handle_sigchld(self, signum, frame):
-        pass
 
     def run_forever(self):
         while not self.stopped:
@@ -97,6 +92,7 @@ class RainbowSaddle(object):
 
 
 def main():
+    # Parse command line
     parser = argparse.ArgumentParser(description='Wrap gunicorn to handle '
             'graceful restarts correctly')
     parser.add_argument('command', help='the gunicorn exe to run (e.g. '
@@ -112,5 +108,7 @@ def main():
         with open(options.pid, 'w') as fp:
             fp.write(os.getpid())
         atexit.register(os.unlink, options.pid)
+
+    # Run script
     saddle = RainbowSaddle(options)
     saddle.run_forever()
