@@ -64,7 +64,7 @@ class RainbowSaddle(object):
 
         # Gracefully kill old workers
         self.log('Stoping old arbiter with PID %s' % self.arbiter_pid)
-        os.kill(self.arbiter_pid, signal.SIGQUIT)
+        os.kill(self.arbiter_pid, signal.SIGTERM)
         self.wait_pid(self.arbiter_pid)
 
         # Read new arbiter PID, being super paranoid about it (we read the PID
