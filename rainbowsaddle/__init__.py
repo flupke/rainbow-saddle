@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import os
+import os.path as op
 import sys
 import atexit
 import subprocess
@@ -51,29 +52,37 @@ class RainbowSaddle(object):
     @signal_handler
     def restart_arbiter(self, signum, frame):
         # Fork a new arbiter
-        self.log('Starting new arbiter and gracefully stopping old workers')
+        self.log('Starting new arbiter')
         os.kill(self.arbiter_pid, signal.SIGUSR2)
-        # Gracefully kill workers and wait until they are all closed
-        os.kill(self.arbiter_pid, signal.SIGWINCH)
-        process = psutil.Process(self.arbiter_pid)
-        while len(process.get_children()) != 1:
-            time.sleep(0.1)
-        # Stop previous arbiter
+
+        # Wait until pidfile has been renamed
+        old_pidfile = self.pidfile + '.oldbin'
+        while True:
+            if op.exists(old_pidfile):
+                break
+            time.sleep(0.3)
+
+        # Gracefully kill old workers
         self.log('Stoping old arbiter with PID %s' % self.arbiter_pid)
         os.kill(self.arbiter_pid, signal.SIGQUIT)
         self.wait_pid(self.arbiter_pid)
-        # Read new arbiter PID
+
+        # Read new arbiter PID, being super paranoid about it (we read the PID
+        # file until we get the same value twice)
         prev_pid = None
         while True:
-            with open(self.pidfile) as fp:
-                try:
-                    pid = int(fp.read())
-                except ValueError:
-                    pass
-                else:
-                    if prev_pid == pid:
-                        break
-                    prev_pid = pid
+            if op.exists(self.pidfile):
+                with open(self.pidfile) as fp:
+                    try:
+                        pid = int(fp.read())
+                    except ValueError:
+                        pass
+                    else:
+                        if prev_pid == pid:
+                            break
+                        prev_pid = pid
+            else:
+                print('pidfile not found: ' + self.pidfile)
             time.sleep(0.3)
         self.arbiter_pid = pid
         self.log('New arbiter PID is %s' % self.arbiter_pid)
