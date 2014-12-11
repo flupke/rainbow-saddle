@@ -99,7 +99,7 @@ class RainbowSaddle(object):
                 while True:
                     try:
                         process = psutil.Process(pid)
-                        if process.status == 'zombie':
+                        if process.status() == 'zombie':
                             break
                     except psutil.NoSuchProcess:
                         break
