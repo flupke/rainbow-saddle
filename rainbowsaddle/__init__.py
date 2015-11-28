@@ -103,7 +103,7 @@ class RainbowSaddle(object):
         """
         try:
             os.waitpid(pid, 0)
-        except OSError, err:
+        except OSError as err:
             if err.errno == 10:
                 while True:
                     try:
@@ -121,7 +121,7 @@ def main():
             'graceful restarts correctly')
     parser.add_argument('--pid',  help='a filename to store the '
             'rainbow-saddle PID')
-    parser.add_argument('gunicorn_args', nargs=argparse.REMAINDER, 
+    parser.add_argument('gunicorn_args', nargs=argparse.REMAINDER,
             help='gunicorn command line')
     options = parser.parse_args()
 
