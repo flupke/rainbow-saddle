@@ -103,8 +103,7 @@ class RainbowSaddle(object):
         """
         try:
             os.waitpid(pid, 0)
-        except OSError:
-            _, err, _ = sys.exc_info()
+        except OSError as err:
             if err.errno == 10:
                 while True:
                     try:
