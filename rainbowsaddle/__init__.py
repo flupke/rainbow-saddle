@@ -62,11 +62,6 @@ class RainbowSaddle(object):
                 break
             time.sleep(0.3)
 
-        # Gracefully kill old workers
-        self.log('Stoping old arbiter with PID %s' % self.arbiter_pid)
-        os.kill(self.arbiter_pid, signal.SIGTERM)
-        self.wait_pid(self.arbiter_pid)
-
         # Read new arbiter PID, being super paranoid about it (we read the PID
         # file until we get the same value twice)
         prev_pid = None
@@ -84,6 +79,12 @@ class RainbowSaddle(object):
             else:
                 print('pidfile not found: ' + self.pidfile)
             time.sleep(0.3)
+
+        # Gracefully kill old workers
+        self.log('Stoping old arbiter with PID %s' % self.arbiter_pid)
+        os.kill(self.arbiter_pid, signal.SIGTERM)
+        self.wait_pid(self.arbiter_pid)
+
         self.arbiter_pid = pid
         self.log('New arbiter PID is %s' % self.arbiter_pid)
 
