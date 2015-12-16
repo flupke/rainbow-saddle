@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import Queue
 import os
 import os.path as op
 import sys
@@ -30,6 +31,7 @@ def signal_handler(func):
 class RainbowSaddle(object):
 
     def __init__(self, options):
+        self.hup_queue = Queue.Queue()
         self.stopped = False
         # Create a temporary file for the gunicorn pid file
         fp = tempfile.NamedTemporaryFile(prefix='rainbow-saddle-gunicorn-',
@@ -41,16 +43,23 @@ class RainbowSaddle(object):
         process = subprocess.Popen(args)
         self.arbiter_pid = process.pid
         # Install signal handlers
-        signal.signal(signal.SIGHUP, self.restart_arbiter)
+        signal.signal(signal.SIGHUP, self.handle_hup)
         for signum in (signal.SIGTERM, signal.SIGINT):
             signal.signal(signum, self.stop)
 
     def run_forever(self):
         while not self.stopped:
+            if not self.hup_queue.empty():
+                with self.hup_queue.mutex:
+                    self.hup_queue.queue.clear()
+                self.restart_arbiter()
             time.sleep(1)
 
     @signal_handler
-    def restart_arbiter(self, signum, frame):
+    def handle_hup(self, signum, frame):
+        self.hup_queue.put((signum, frame))
+
+    def restart_arbiter(self):
         # Fork a new arbiter
         self.log('Starting new arbiter')
         os.kill(self.arbiter_pid, signal.SIGUSR2)
