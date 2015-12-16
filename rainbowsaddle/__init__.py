@@ -1,6 +1,5 @@
 from __future__ import print_function
 
-import Queue
 import os
 import os.path as op
 import sys
@@ -14,6 +13,11 @@ import functools
 import traceback
 
 import psutil
+
+try:
+    import Queue as queue
+except ImportError:
+    import queue
 
 
 def signal_handler(func):
@@ -31,7 +35,7 @@ def signal_handler(func):
 class RainbowSaddle(object):
 
     def __init__(self, options):
-        self.hup_queue = Queue.Queue()
+        self.hup_queue = queue.Queue()
         self.stopped = False
         # Create a temporary file for the gunicorn pid file
         fp = tempfile.NamedTemporaryFile(prefix='rainbow-saddle-gunicorn-',
