@@ -32,7 +32,10 @@ class RainbowSaddle(object):
     def __init__(self, options):
         self.stopped = False
         # Create a temporary file for the gunicorn pid file
-        fp = tempfile.NamedTemporaryFile(prefix='rainbow-saddle-gunicorn-',
+        if options.gunicorn_pidfile:
+            fp = open(options.gunicorn_pidfile, 'wr')
+        else:
+            fp = tempfile.NamedTemporaryFile(prefix='rainbow-saddle-gunicorn-',
                 suffix='.pid', delete=False)
         fp.close()
         self.pidfile = fp.name
@@ -121,6 +124,8 @@ def main():
             'graceful restarts correctly')
     parser.add_argument('--pid',  help='a filename to store the '
             'rainbow-saddle PID')
+    parser.add_argument('--gunicorn-pidfile',  help='a filename to store the '
+            'gunicorn PID')
     parser.add_argument('gunicorn_args', nargs=argparse.REMAINDER,
             help='gunicorn command line')
     options = parser.parse_args()
