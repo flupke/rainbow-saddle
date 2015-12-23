@@ -30,6 +30,7 @@ def signal_handler(func):
 class RainbowSaddle(object):
 
     def __init__(self, options):
+        self._arbiter_pid = None
         self.stopped = False
         # Create a temporary file for the gunicorn pid file
         if options.gunicorn_pidfile:
@@ -48,9 +49,32 @@ class RainbowSaddle(object):
         for signum in (signal.SIGTERM, signal.SIGINT):
             signal.signal(signum, self.stop)
 
+    @property
+    def arbiter_pid(self):
+        return self._arbiter_pid
+
+    @arbiter_pid.setter
+    def arbiter_pid(self, pid):
+        self._arbiter_pid = pid
+        self.arbiter_process = psutil.Process(self.arbiter_pid)
+
     def run_forever(self):
-        while not self.stopped:
+        while self.is_running():
             time.sleep(1)
+
+    def is_running(self):
+        if self.stopped:
+            return False
+        try:
+            pstatus = self.arbiter_process.status()
+        except psutil.NoSuchProcess:
+            return False
+        else:
+            if pstatus == psutil.STATUS_ZOMBIE:
+                self.log('Gunicorn master is %s (PID: %s), shutting down '
+                    'rainbow-saddle' % (pstatus, self.arbiter_pid))
+                return False
+        return True
 
     @signal_handler
     def restart_arbiter(self, signum, frame):
