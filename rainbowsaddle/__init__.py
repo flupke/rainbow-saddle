@@ -62,13 +62,15 @@ class RainbowSaddle(object):
     def is_running(self):
         if self.stopped:
             return False
-
-        # if gunicorn master is dead, rainbow-saddle is shutted down
-        pstatus = self.arbiter_process.status()
-        if pstatus == psutil.STATUS_ZOMBIE:
-            self.log('Gunicorn master is %s (PID: %s), shutting down '
-                     'rainbow-saddle' % (pstatus, self.arbiter_pid))
+        try:
+            pstatus = self.arbiter_process.status()
+        except psutil.NoSuchProcess:
             return False
+        else:
+            if pstatus == psutil.STATUS_ZOMBIE:
+                self.log('Gunicorn master is %s (PID: %s), shutting down '
+                    'rainbow-saddle' % (pstatus, self.arbiter_pid))
+                return False
         return True
 
     @signal_handler
