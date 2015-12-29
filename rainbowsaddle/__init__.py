@@ -146,9 +146,9 @@ def main():
     # Parse command line
     parser = argparse.ArgumentParser(description='Wrap gunicorn to handle '
             'graceful restarts correctly')
-    parser.add_argument('--pid',  help='a filename to store the '
+    parser.add_argument('--pid', help='a filename to store the '
             'rainbow-saddle PID')
-    parser.add_argument('--gunicorn-pidfile',  help='a filename to store the '
+    parser.add_argument('--gunicorn-pidfile', help='a filename to store the '
             'gunicorn PID')
     parser.add_argument('gunicorn_args', nargs=argparse.REMAINDER,
             help='gunicorn command line')
