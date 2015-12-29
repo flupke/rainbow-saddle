@@ -14,6 +14,11 @@ import traceback
 
 import psutil
 
+try:
+    import Queue as queue
+except ImportError:
+    import queue
+
 
 def signal_handler(func):
     @functools.wraps(func)
@@ -31,6 +36,7 @@ class RainbowSaddle(object):
 
     def __init__(self, options):
         self._arbiter_pid = None
+        self.hup_queue = queue.Queue()
         self.stopped = False
         # Create a temporary file for the gunicorn pid file
         if options.gunicorn_pidfile:
@@ -45,7 +51,7 @@ class RainbowSaddle(object):
         process = subprocess.Popen(args)
         self.arbiter_pid = process.pid
         # Install signal handlers
-        signal.signal(signal.SIGHUP, self.restart_arbiter)
+        signal.signal(signal.SIGHUP, self.handle_hup)
         for signum in (signal.SIGTERM, signal.SIGINT):
             signal.signal(signum, self.stop)
 
@@ -60,6 +66,10 @@ class RainbowSaddle(object):
 
     def run_forever(self):
         while self.is_running():
+            if not self.hup_queue.empty():
+                with self.hup_queue.mutex:
+                    self.hup_queue.queue.clear()
+                self.restart_arbiter()
             time.sleep(1)
 
     def is_running(self):
@@ -77,7 +87,10 @@ class RainbowSaddle(object):
         return True
 
     @signal_handler
-    def restart_arbiter(self, signum, frame):
+    def handle_hup(self, signum, frame):
+        self.hup_queue.put((signum, frame))
+
+    def restart_arbiter(self):
         # Fork a new arbiter
         self.log('Starting new arbiter')
         os.kill(self.arbiter_pid, signal.SIGUSR2)
@@ -88,11 +101,6 @@ class RainbowSaddle(object):
             if op.exists(old_pidfile):
                 break
             time.sleep(0.3)
-
-        # Gracefully kill old workers
-        self.log('Stoping old arbiter with PID %s' % self.arbiter_pid)
-        os.kill(self.arbiter_pid, signal.SIGTERM)
-        self.wait_pid(self.arbiter_pid)
 
         # Read new arbiter PID, being super paranoid about it (we read the PID
         # file until we get the same value twice)
@@ -111,6 +119,12 @@ class RainbowSaddle(object):
             else:
                 print('pidfile not found: ' + self.pidfile)
             time.sleep(0.3)
+
+        # Gracefully kill old workers
+        self.log('Stoping old arbiter with PID %s' % self.arbiter_pid)
+        os.kill(self.arbiter_pid, signal.SIGTERM)
+        self.wait_pid(self.arbiter_pid)
+
         self.arbiter_pid = pid
         self.log('New arbiter PID is %s' % self.arbiter_pid)
 
