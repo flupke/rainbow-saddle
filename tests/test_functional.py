@@ -37,9 +37,13 @@ def test_reload_copy():
     # Wait until app responds
     assert_responds(url, 200, 'one')
 
-    # Create second wsgi file, also remove .pyc file
+    # Create second wsgi file, also remove .pyc files
     shutil.copy(wsgi_file_2, target_wsgi_file)
-    os.unlink(target_wsgi_file + 'c')
+    try:
+        os.unlink(target_wsgi_file + 'c')
+    except OSError:
+        pass
+    shutil.rmtree(op.join(THIS_DIR, '__pycache__'), ignore_errors=True)
 
     # Send HUP to rainbow-saddle, and wait until response changes
     rs_proc.send_signal(signal.SIGHUP)
