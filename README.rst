@@ -1,6 +1,9 @@
 Rainbow Saddle
 ==============
 
+.. image:: https://travis-ci.org/flupke/rainbow-saddle.svg
+    :target: https://travis-ci.org/flupke/rainbow-saddle
+
 rainbow-saddle is a wrapper around `Gunicorn <http://gunicorn.org/>`_ to
 simplify code reloading without dropping requests.
 
