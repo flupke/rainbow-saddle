@@ -1,6 +1,11 @@
 News
 ====
 
+0.3.1
+-----
+
+Minor Python3 compatibility fix, thanks to Justin Locsei.
+
 0.3.0
 -----
 
