@@ -40,7 +40,7 @@ class RainbowSaddle(object):
         self.stopped = False
         # Create a temporary file for the gunicorn pid file
         if options.gunicorn_pidfile:
-            fp = open(options.gunicorn_pidfile, 'wr')
+            fp = open(options.gunicorn_pidfile, 'r+')
         else:
             fp = tempfile.NamedTemporaryFile(prefix='rainbow-saddle-gunicorn-',
                 suffix='.pid', delete=False)
