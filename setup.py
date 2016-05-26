@@ -8,7 +8,7 @@ README = open(os.path.join(here, 'README.rst')).read()
 NEWS = open(os.path.join(here, 'NEWS.txt')).read()
 version = '0.3.1'
 install_requires = [
-    'psutil>=3.3.0,<=3.4',
+    'psutil>=4.2.0',
 ]
 
 
