@@ -39,13 +39,13 @@ class RainbowSaddle(object):
         self.hup_queue = queue.Queue()
         self.stopped = False
         # Create a temporary file for the gunicorn pid file
-        if options.gunicorn_pidfile:
-            fp = open(options.gunicorn_pidfile, 'r+')
+        if not options.gunicorn_pidfile:
+            self.pidfile = options.gunicorn_pidfile
         else:
             fp = tempfile.NamedTemporaryFile(prefix='rainbow-saddle-gunicorn-',
                 suffix='.pid', delete=False)
-        fp.close()
-        self.pidfile = fp.name
+            fp.close()
+            self.pidfile = fp.name
         # Start gunicorn process
         args = options.gunicorn_args + ['--pid', self.pidfile]
         process = subprocess.Popen(args)
