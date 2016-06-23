@@ -39,7 +39,7 @@ class RainbowSaddle(object):
         self.hup_queue = queue.Queue()
         self.stopped = False
         # Create a temporary file for the gunicorn pid file
-        if not options.gunicorn_pidfile:
+        if options.gunicorn_pidfile:
             self.pidfile = options.gunicorn_pidfile
         else:
             fp = tempfile.NamedTemporaryFile(prefix='rainbow-saddle-gunicorn-',
