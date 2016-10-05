@@ -95,37 +95,35 @@ class RainbowSaddle(object):
         self.log('Starting new arbiter')
         os.kill(self.arbiter_pid, signal.SIGUSR2)
 
-        # Wait until pidfile has been renamed
-        old_pidfile = self.pidfile + '.oldbin'
+        # Wait until the new master is up
+        new_pidfile = self.pidfile + '.2'
         while True:
-            if op.exists(old_pidfile):
+            if op.exists(new_pidfile):
+                self.log('New pidfile found: {}'.format(new_pidfile))
                 break
             time.sleep(0.3)
 
         # Read new arbiter PID, being super paranoid about it (we read the PID
         # file until we get the same value twice)
-        prev_pid = None
+        _verification_pid = None
         while True:
-            if op.exists(self.pidfile):
-                with open(self.pidfile) as fp:
-                    try:
-                        pid = int(fp.read())
-                    except ValueError:
-                        pass
-                    else:
-                        if prev_pid == pid:
-                            break
-                        prev_pid = pid
-            else:
-                print('pidfile not found: ' + self.pidfile)
+            with open(new_pidfile) as fp:
+                try:
+                    new_pid = int(fp.read())
+                except ValueError:
+                    pass
+                else:
+                    if _verification_pid == new_pid:
+                        break
+                    _verification_pid = new_pid
             time.sleep(0.3)
 
         # Gracefully kill old workers
-        self.log('Stoping old arbiter with PID %s' % self.arbiter_pid)
+        self.log('Stopping old arbiter with PID %s' % self.arbiter_pid)
         os.kill(self.arbiter_pid, signal.SIGTERM)
         self.wait_pid(self.arbiter_pid)
 
-        self.arbiter_pid = pid
+        self.arbiter_pid = new_pid
         self.log('New arbiter PID is %s' % self.arbiter_pid)
 
     def stop(self, signum, frame):
